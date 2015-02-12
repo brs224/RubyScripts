@@ -191,14 +191,14 @@ begin
 	
 	
 	 if skipExcludedRulebooks == '0' #open output files, write headers
-	  rbMissingoutputFileName = "RulebookMissingReport_#{currentDateTime}.csv"
-	  rbTaxoMissingoutputFileName = "RulebookTaxoMissingReport_#{currentDateTime}.csv"
-	  rbTaxoEmptyoutputFileName = "RulebookTaxoEmptyReport_#{currentDateTime}.csv"
+	  rbMissingoutputFileName = "./outputFiles/RulebookMissingReport_#{currentDateTime}.csv"
+	  rbTaxoMissingoutputFileName = "./outputFiles/RulebookTaxoMissingReport_#{currentDateTime}.csv"
+	  rbTaxoEmptyoutputFileName = "./outputFiles/RulebookTaxoEmptyReport_#{currentDateTime}.csv"
 	  excludedRulebooks = "ExcludedRulebooks_#{currentDateTime}.txt"
 	 
 	  #puts "Creating File #{outputFileName}"
 	 
-	  outputrbMissing = File.open("#{rbMissingoutputFileName}","w")
+	  outputrbMissing = rm ("#{rbMissingoutputFileName}","w")
 	  outputrbTaxoMissing = File.open("#{rbTaxoMissingoutputFileName}","w")
 	  outputrbTaxoEmpty = File.open("#{rbTaxoEmptyoutputFileName}","w")
 	   outputExcludedRulebooks = File.open("#{excludedRulebooks}","w")
@@ -244,12 +244,14 @@ begin
 	    if !excludedRulebooks3.index("#{ruleTableNameStrip}") && tableCheck == '1' &&  ruleTableNameStrip == 'US_CFR17'
 	  
           #puts "In non exluded ---> 	  #{ruleTableNameStrip}"
-		  outputMissingTaxoFileName = "RulebookTaxoReport_#{rbid}_#{ruleTableNameStrip}_#{currentDateTime}.csv"
+		  outputMissingTaxoFileName = "./outputFiles/RulebookTaxoReport_#{rbid}_#{ruleTableNameStrip}_#{currentDateTime}.csv"
 	
 	      outputMissingTaxo = File.open("#{outputMissingTaxoFileName}","w")
 	 
 	      outputMissingTaxo << ("RuleBookName, RuleBookID, RecordId, ElementId, ContentTypeCount, OrgCount, ThemeCount\r\n")
 	 
+	 #puts "Created output file ..."
+	 #exit(0)
 	     # Records with no taxo ids
 		 
 	     sqlQuery1="select record_id, element_id from rulebooks.#{ruleTableNameStrip} rb where "  + 
