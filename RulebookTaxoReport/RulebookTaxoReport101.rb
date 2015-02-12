@@ -198,7 +198,7 @@ begin
 	 
 	  #puts "Creating File #{outputFileName}"
 	 
-	  outputrbMissing = rm ("#{rbMissingoutputFileName}","w")
+	  outputrbMissing = File.open("#{rbMissingoutputFileName}","w")
 	  outputrbTaxoMissing = File.open("#{rbTaxoMissingoutputFileName}","w")
 	  outputrbTaxoEmpty = File.open("#{rbTaxoEmptyoutputFileName}","w")
 	   outputExcludedRulebooks = File.open("#{excludedRulebooks}","w")
@@ -388,18 +388,18 @@ begin
 	 
 	 dirDateTime = Time.now.strftime("%d%m%Y%H_%M_%S")
 	 
-	 #ftp=Net::FTP.newftp.connect('c985rsb.int.westgroup.com ',21) 
-     #ftp.login('tcusr','notwest123') 
-     #ftp.chdir('/home/tcusr/RulebooktaxoReports') 
-	 #ftp.mkdir('RulebookReportRun_#{dirDateTime}')
-	 #ftp.chdir('/home/tcusr/RulebooktaxoReports/RulebookReportRun_#{dirDateTime}') 
+	 ftp=Net::FTP.newftp.connect('c985rsb.int.westgroup.com ',21) 
+     ftp.login('tcusr','notwest123') 
+     ftp.chdir('/home/tcusr/RulebooktaxoReports') 
+	 ftp.mkdir('RulebookReportRun_#{dirDateTime}')
+	 ftp.chdir('/home/tcusr/RulebooktaxoReports/RulebookReportRun_#{dirDateTime}') 
 	 
 	 resultFiles.each do fileName
 	   puts "Filename = #{fileName}"
-       #ftp.putbinaryfile(fileName) 
+       ftp.putbinaryfile(fileName) 
 	 end
 	 
-     #ftp.close 
+     ftp.close 
 
 
 	 endDateTime = Time.now.strftime("%d%m%Y%H_%M_%S")
