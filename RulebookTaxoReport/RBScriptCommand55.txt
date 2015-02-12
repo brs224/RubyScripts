@@ -1,0 +1,85 @@
+C:/RailsInstaller/Ruby2.1.0/bin/ruby.exe RulebookTaxoReport55.rb 1 1 ExcludedRulebooks_0502201520_00_18.txt
+
+C:/RailsInstaller/Ruby2.1.0/bin/ruby.exe RulebookTaxoReport66.rb 1 1 0 0 RBID_LIST_LEGAL.csv ExcludedLegalRulebooks.txt
+
+C:/RailsInstaller/Ruby2.1.0/bin/ruby.exe RulebookTaxoReport77.rb 1 1 0 0 RBID_LIST_LEGAL.csv ExcludedLegalRulebooks.txt
+
+C:/RailsInstaller/Ruby2.1.0/bin/ruby.exe RulebookTaxoReport101.rb 1 1 0 0 RBID_LIST_LEGAL.csv ExcludedLegalRulebooks.txt
+
+
+Themes/Subject:
+IE5996FF0458211E3A899B08B7B2FF604
+10526 (static id)
+5443 (taxo id)
+
+
+Organizations:
+IA02B2680458B11E3A899B08B7B2FF604
+648 (static id)
+6989 (taxo id)
+
+
+Content Type:
+2543 (static id)
+8884 (taxo id)
+
+http://jerodsanto.net/2009/02/a-simple-ruby-method-to-send-emai/
+
+
+http://www.thewindowsclub.com/how-to-schedule-batch-file-run-automatically-windows-7
+
+
+http://stackoverflow.com/questions/19143892/ruby-and-sending-emails-with-netsmtp-how-to-specify-email-subject
+
+https://rubygems.org/pages/download#formats
+
+http://thinkingeek.com/2012/07/29/sending-emails-google-mail-ruby/
+
+
+
+/6378/6600/6601/6602/
+6378 = Themes
+5443 = Subject
+
+
+
+/6989/6990/6997/
+6989 - Organizations
+
+/8884/8898/8904/
+8884 = Content Type
+
+http://4loc.wordpress.com/2008/12/04/using-ftp-in-ruby/
+require 'net/ftp'
+ftp=Net::FTP.newftp.connect(URL,21) 
+ftp.login(username,passwd) 
+ftp.chdir(directory) 
+ftp.getbinaryfile(filename) 
+ftp.close 
+
+/home/tcusr/RulebooktaxoReports
+
+TEST server:
+
+Server: c985rsb.int.westgroup.com 
+User: tcusr
+Password: notwest123
+
+
+
+http://www.infoq.com/articles/ruby-file-upload-ssh-intro
+
+1: require 'net/ssh'
+2: require 'net/sftp'
+3: Net::SSH.start('server', 'username', 'password') do |ssh|
+4:   ssh.sftp.connect do |sftp|
+5:     Dir.foreach('.') do |file|
+6:       puts file
+7:     end
+8:   end
+9: end
+
+
+
+
+
