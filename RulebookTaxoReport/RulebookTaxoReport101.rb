@@ -22,6 +22,60 @@ begin
 	   return var
 	end
 	
+	def ftp_results(resultFiles3)
+	
+	 dirDateTime2 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	 puts "Time now Date: #{dirDateTime2}  ......"
+	 
+	 ftp=Net::FTP.new
+	 ftp.connect('c985rsb.int.westgroup.com',21) 
+     ftp.login('tcusr','notwest123') 
+	 ftp.passive = true
+     ftp.debug_mode = true
+	 ftp.read_timeout = 10000
+
+
+	 ftp.chdir('/home/tcusr/')
+	
+     ftp.chdir('/home/tcusr/RulebooktaxoReports/') 
+	 newDir2= 'RulebookReportRun_' + dirDateTime2
+	 
+	 ftp.mkdir(newDir2)
+	 
+	 ftp.sendcmd("SITE CHMOD 7777 #{newDir2}") 
+	 
+	 ftp.chdir(newDir2) 
+	 
+	 
+	  #puts resultFiles3.inspect
+			
+	  Dir.chdir ("outputFiles")
+	
+	  ftp.passive = true
+      ftp.debug_mode = true
+	  ftp.read_timeout = 10000
+
+      resultFiles3.each do |fileName2|
+	    #puts "Filename = #{fileName2}"
+	    #puts Dir.pwd
+	     #puts "In loop before binary put.."
+		 begin
+           Timeout.timeout(20) do
+             ftp.putbinaryfile("#{fileName2}")
+         end
+        rescue Timeout::Error
+          errors << "File download timed out for: #{fileName2}"
+          puts errors.last
+        end
+
+	     #ftp.putbinaryfile("#{fileName}") 
+         #puts "In loop after binary put..."
+	  end
+	
+	 Dir.chdir ("..")
+	
+     ftp.close 
+	end #ftp_results
 
 	def createExcludedRulebooksList(ruleTableName,ruleBookId,client2,outputrbMissing2,outputrbTaxoMissing2,outputrbTaxoEmpty2,outputExcludedRulebooks2)
 	
@@ -83,11 +137,12 @@ begin
 	 inputFilename = ARGV[4] #filename of thee include rbid  list file
 	 excludedRulebooksRead = ARGV[5] #filename of excluded rb table names
 	 
+
 	 #puts "tableCheck = #{tableCheck}"   # 1= use included table, 0 = use excluded table
 	 #puts "skipExcludedRulebooks = #{skipExcludedRulebooks}"   #0 = create excluded table
 	 #	 puts "skipExcludedCheck = #{skipExcludedCheck}"   #0 = create excluded table
 	#	 	 puts "skipIncluded = #{skipIncluded}"   #0 = create excluded table
-	  puts "inputFilename = #{inputFilename}" # file to use for included or excluded tables
+	  #puts "inputFilename = #{inputFilename}" # file to use for included or excluded tables
 	 #puts "excludedRulebooksRead = #{excludedRulebooksRead}" # file to use for included or excluded tables
 	 
      #puts "test test..."
@@ -210,6 +265,17 @@ begin
 	  
 	 end  #skipExcludedRulebooks == 0, open output files, write headers
 	 
+	 if skipExcludedRulebooks == '1'
+	   #puts "before chgdir outputFiles mainline..."
+	   #puts Dir.pwd
+	   
+	   Dir.chdir ("outputFiles")
+	  
+	   #puts "after chgdir outputFiles mainline..."
+	   #puts Dir.pwd
+	 end 
+		  
+		  
 	 results.each(:as => :hash) do |row|
 	
 	   ruleTableName = row['tablename']
@@ -220,7 +286,7 @@ begin
 	    
 		#puts "Table name = #{ruleTableNameStrip}"
 	
-		if skipExcludedRulebooks == '0'  #if ==1 then will create the excluded list of rulebooks for later use
+		if skipExcludedRulebooks == '0'  #if ==0 then will create the excluded list of rulebooks for later use
 	
         	createExcludedRulebooksList(ruleTableNameStrip,rbid,client,outputrbMissing,outputrbTaxoMissing ,outputrbTaxoEmpty,outputExcludedRulebooks)
 		end #end if skipExcludedRulebooks == 0
@@ -244,8 +310,9 @@ begin
 	    if !excludedRulebooks3.index("#{ruleTableNameStrip}") && tableCheck == '1' &&  ruleTableNameStrip == 'US_CFR17'
 	  
           #puts "In non exluded ---> 	  #{ruleTableNameStrip}"
-		  outputMissingTaxoFileName = "./outputFiles/RulebookTaxoReport_#{rbid}_#{ruleTableNameStrip}_#{currentDateTime}.csv"
-	
+		  #outputMissingTaxoFileName = "./outputFiles/RulebookTaxoReport_#{rbid}_#{ruleTableNameStrip}_#{currentDateTime}.csv"
+	      outputMissingTaxoFileName = "RulebookTaxoReport_#{rbid}_#{ruleTableNameStrip}_#{currentDateTime}.csv"
+		  
 	      outputMissingTaxo = File.open("#{outputMissingTaxoFileName}","w")
 	 
 	      outputMissingTaxo << ("RuleBookName, RuleBookID, RecordId, ElementId, ContentTypeCount, OrgCount, ThemeCount\r\n")
@@ -357,7 +424,7 @@ begin
 		   puts("File empty .. #{outputMissingTaxoFileName}")
 		   #File.delete("#{outputMissingTaxoFileName}")
 		 else
-		   puts("File NOT empty .. #{outputMissingTaxoFileName}")
+		   #puts("File NOT empty .. #{outputMissingTaxoFileName}")
 		   resultFiles << outputMissingTaxoFileName
 		   # put file in an array so we can ftp later
 		 end
@@ -378,30 +445,21 @@ begin
 	   outputrbTaxoMissing.close
 	   outputrbTaxoEmpty.close
 	   outputExcludedRulebooks.close
-	
+	 else
+	    Dir.chdir ("..")
+	  
+	   #puts "after chgdir outputFiles mainline2 end..."
+	    #puts Dir.pwd
 	 end
 	 
 	 
 	 #ftp all files from array of files that had data for this run
+	 #puts "Before FTP routine....."
 	 
-	 puts resultFiles.inspect
+	 ftp_results(resultFiles)
 	 
-	 dirDateTime = Time.now.strftime("%d%m%Y%H_%M_%S")
+	 #puts "After FTP routine....."
 	 
-	 ftp=Net::FTP.newftp.connect('c985rsb.int.westgroup.com ',21) 
-     ftp.login('tcusr','notwest123') 
-     ftp.chdir('/home/tcusr/RulebooktaxoReports') 
-	 ftp.mkdir('RulebookReportRun_#{dirDateTime}')
-	 ftp.chdir('/home/tcusr/RulebooktaxoReports/RulebookReportRun_#{dirDateTime}') 
-	 
-	 resultFiles.each do fileName
-	   puts "Filename = #{fileName}"
-       ftp.putbinaryfile(fileName) 
-	 end
-	 
-     ftp.close 
-
-
 	 endDateTime = Time.now.strftime("%d%m%Y%H_%M_%S")
 	 
 	 #puts "validRulebookCount #{validRulebookCount} "
