@@ -7,6 +7,7 @@ begin
 
    
 	def send_email(to, subject = "", body = "")
+	  #puts "Send email start..."
       from = "barbara.switzer@thomsonreuters.com"
       body= "From: #{from}\r\nTo: #{to}\r\nSubject: #{subject}\r\n\r\n#{body}\r\n"
 
@@ -14,6 +15,7 @@ begin
 	  Net::SMTP.start('mailhub.tfn.com', 25, '10.222.138.188') do |smtp|
         smtp.send_message body, from, to
       end
+	  #puts "Send email end..."
     end
 	
 	
@@ -22,10 +24,10 @@ begin
 	   return var
 	end
 	
-	def ftp_results(resultFiles3)
+	def ftp_results(resultFiles3,dirCreateDate)
 	
-	 dirDateTime2 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	 puts "Time now Date: #{dirDateTime2}  ......"
+	 #dirDateTime2 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	 #puts "Time now Date: #{dirCreateDateTime2}  ......"
 	 
 	 ftp=Net::FTP.new
 	 ftp.connect('c985rsb.int.westgroup.com',21) 
@@ -38,7 +40,7 @@ begin
 	 ftp.chdir('/home/tcusr/')
 	
      ftp.chdir('/home/tcusr/RulebooktaxoReports/') 
-	 newDir2= 'RulebookReportRun_' + dirDateTime2
+	 newDir2= 'RulebookReportRun_' + dirCreateDate
 	 
 	 ftp.mkdir(newDir2)
 	 
@@ -193,9 +195,11 @@ begin
 		sqlQueryInClause.slice! ", )"
 		sqlQueryInClause = "#{sqlQueryInClause} )"
 		
+	
 		sqlQuery = "select ref,tablename from rulebooks.rulebook_index where rulebooks.rulebook_index.ref IN #{sqlQueryInClause} order by ref asc"
 		#puts "SQl query #{sqlQuery} in IF stmt"
 	
+	   
 		#puts "IN skipExcludedRulebooks == 1 ELSE"
 	
 	    #results = client.query(sqlQuery)  #query only for rulebooks in included list,  input has to be a csv file of just rbid
@@ -207,8 +211,14 @@ begin
 
       #puts "SQl query #{sqlQuery}"
 	  
+	  #currentDateTime1 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, before rulebook_index lookup: #{currentDateTime1}  ......"
+		 
       results = client.query(sqlQuery)
  
+       #currentDateTime2 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, after rulebook_index lookup: #{currentDateTime2}  ......"
+		 
 	 #outputMissingTaxoFileName = "RulebookTaxoReport_#{currentDateTime}.csv"
 	
 	 #if (skipExcludedCheck == '0')
@@ -307,7 +317,7 @@ begin
 	fileRowCount = 0
 		
 	   #if ((!excludedRulebooks3.index("#{ruleTableNameStrip}") && skipExcludedCheck == '0') || skipIncluded == '0') && tableCheck == '1'
-	    if !excludedRulebooks3.index("#{ruleTableNameStrip}") && tableCheck == '1' &&  ruleTableNameStrip == 'US_CFR17'
+	    if !excludedRulebooks3.index("#{ruleTableNameStrip}") && tableCheck == '1' #&&  ruleTableNameStrip == 'US_CFR17'
 	  
           #puts "In non exluded ---> 	  #{ruleTableNameStrip}"
 		  #outputMissingTaxoFileName = "./outputFiles/RulebookTaxoReport_#{rbid}_#{ruleTableNameStrip}_#{currentDateTime}.csv"
@@ -321,13 +331,21 @@ begin
 	 #exit(0)
 	     # Records with no taxo ids
 		 
+		
 	     sqlQuery1="select record_id, element_id from rulebooks.#{ruleTableNameStrip} rb where "  + 
 	            " rb.record_id NOT in (select DISTINCT(rbLink.record_id) " +
 				" from taxonomy.#{ruleTableNameStrip}_taxonomy_link rbLink)" 
-				
+				 
+		#currentDateTime3 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, before rulebook taxo #{ruleTableNameStrip} lookup: #{currentDateTime3}  ......"
 
 		 results1 = client.query("#{sqlQuery1}")
 		   
+		   
+		 #currentDateTime4 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, after rulebook taxo #{ruleTableNameStrip} lookup: #{currentDateTime4}  ......"
+		
+		
         results1.each(:as => :hash) do |row1|
 	      record = row1['record_id']
 		  element = row1['element_id']
@@ -353,8 +371,14 @@ begin
 				" from taxonomy.#{ruleTableNameStrip}_taxonomy_link rbLink)" +
 				" AND rb.end_date = '0000-00-00'"   #most recent version of the rule
 				
-
+ #currentDateTime5 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, before rulebook taxo  get taxos #{ruleTableNameStrip} lookup: #{currentDateTime5}  ......"
+		
 		 results2 = client.query("#{sqlQuery2}")
+		 
+		  #currentDateTime6 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, after rulebook taxo get taxos #{ruleTableNameStrip} lookup: #{currentDateTime6}  ......"
+		
 		   
         results2.each(:as => :hash) do |row2|
 	      record2 = row2['record_id']
@@ -368,9 +392,16 @@ begin
 				" taxo.id = rbLink.taxonomy_id AND " +
 				" taxo.tree_path like '/8884/%' " 
 				
-				 #puts "#{sqlQuery3}"
+					 
+		  #currentDateTime7 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, before rulebook taxo get taxos content type #{ruleTableNameStrip} lookup: #{currentDateTime7}  ......"
+		
+				 #puts "content type sql #{sqlQuery3}"
 		      results3 = client.query("#{sqlQuery3}")
 			  
+			 
+		  #currentDateTime8 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, after rulebook taxo get taxos content type #{ruleTableNameStrip} lookup: #{currentDateTime8}  ......"
 		
 			  
 		   # Count Orgs
@@ -381,11 +412,18 @@ begin
 				" taxo.id = rbLink.taxonomy_id AND " +
 				" taxo.tree_path like '/6989/%' "
 				
-				#puts "#{sqlQuery4}"
+				#puts "prg sql #{sqlQuery4}"
 				
+					 
+		  #currentDateTime9 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, before rulebook taxo get taxos orgs #{ruleTableNameStrip} lookup: #{currentDateTime9}  ......"
+		
 		      results4 = client.query("#{sqlQuery4}")
 			  
-			
+				 
+		  #currentDateTime10 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, after rulebook taxo get taxos orgs #{ruleTableNameStrip} lookup: #{currentDateTime10}  ......"
+		
 			   
 		   # Count Themes
 		   
@@ -397,11 +435,16 @@ begin
 				
 				#" OR taxo.tree_path like '/5443/%') "   #5443 is Subject, is Subject the same as themes???
 				
-				#puts "#{sqlQuery5}"
-				
+				#puts "theme sql #{sqlQuery5}"
+				  
+				  #currentDateTime11 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, before rulebook taxo get taxos themes #{ruleTableNameStrip} lookup: #{currentDateTime11}  ......"
+		
 		      results5 = client.query("#{sqlQuery5}")
 			  
-			
+			  #currentDateTime12 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	     #puts "Start Date, after rulebook taxo get taxos themes #{ruleTableNameStrip} lookup: #{currentDateTime12}  ......"
+		
 			   
 			   
 		   # If any of the 3 counts = 0 then goes into the file 
@@ -456,7 +499,9 @@ begin
 	 #ftp all files from array of files that had data for this run
 	 #puts "Before FTP routine....."
 	 
-	 ftp_results(resultFiles)
+	 dirDateTime2 = Time.now.strftime("%d%m%Y%H_%M_%S")
+	 
+	 ftp_results(resultFiles,dirDateTime2)
 	 
 	 #puts "After FTP routine....."
 	 
@@ -465,7 +510,7 @@ begin
 	 #puts "validRulebookCount #{validRulebookCount} "
 	 puts "End Date: #{endDateTime}  ......"
 	
-	 send_email "barbara.switzer@thomsonreuters.com", "Rulebook Taxo Run Succeeded #{endDateTime}", "Rulebook Taxo Run Succeeded...#{endDateTime} \r\n\n  Files located at:  \r Hostname: c985rsb.int.westgroup.com, \r Directory: /home/tcusr/RulebooktaxoReports/RulebookReportRun_#{dirDateTime} "
+	 send_email "barbara.switzer@thomsonreuters.com", "Rulebook Taxo Run Succeeded #{endDateTime}", "Rulebook Taxo Run Succeeded...#{endDateTime} \r\n\n  Files located at:  \r Hostname: c985rsb.int.westgroup.com, \r Directory: /home/tcusr/RulebooktaxoReports/RulebookReportRun_#{dirDateTime2} "
    
 rescue Mysql2::Error => e
     puts e.errno
