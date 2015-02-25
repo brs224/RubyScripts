@@ -1,84 +1,51 @@
+require 'rubygems'
 require 'mysql2'
-require 'net/smtp'
-require 'net/ftp'
+require 'mail'
+require 'zip'
 
 
 begin
 
    
-	def send_email(to, subject = "", body = "")
-	  #puts "Send email start..."
-      from = "barbara.switzer@thomsonreuters.com"
-      body= "From: #{from}\r\nTo: #{to}\r\nSubject: #{subject}\r\n\r\n#{body}\r\n"
-
-      #Net::SMTP.start('192.168.10.213', 25, '192.168.0.218') do |smtp|
-	  Net::SMTP.start('mailhub.tfn.com', 25, '10.222.138.188') do |smtp|
-        smtp.send_message body, from, to
-      end
-	  #puts "Send email end..."
+     def create_zipFile(directory,zipfile_name)
+  
+      Zip::File.open(zipfile_name, Zip::File::CREATE) do |zipfile|
+         Dir[File.join(directory, '**', '**')].each do |file|
+           zipfile.add(file.sub(directory, ''), file)
+		  end
+       end
     end
 	
 	
-	def say_hello(name)
-	   var = "Hello, " + name
-	   return var
-	end
-	
-	def ftp_results(resultFiles3,dirCreateDate)
-	
-	 #dirDateTime2 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	 #puts "Time now Date: #{dirCreateDateTime2}  ......"
-	 
-	 ftp=Net::FTP.new
-	 ftp.connect('c985rsb.int.westgroup.com',21) 
-     ftp.login('tcusr','notwest123') 
-	 ftp.passive = true
-     ftp.debug_mode = true
-	 ftp.read_timeout = 10000
+	def send_email2(to, subject, body,zipFileName)
+	 puts "In send email 2 .."
+	 puts " Body #{body}.."
+	   options = { :address              => "mailhub.tfn.com",
+            :port                 => 25,
+            :domain               => '10.222.138.188',
+            :authentication       => 'plain',
+            :enable_starttls_auto => true  }
+   
+	   from = "barbara.switzer@thomsonreuters.com"
+		
+       Mail.defaults do
+           delivery_method :smtp, options
+       end
 
 
-	 ftp.chdir('/home/tcusr/')
+	   Mail.deliver do
+          to "#{to}"
+          from "#{from}"
+          subject "#{subject}"
+     	  body "#{body}"
+		  #body File.read('test.txt')
+		  add_file "#{zipFileName}"
+       end
+      
+	  puts "Send email2 end..."
+	  
+    end
 	
-     ftp.chdir('/home/tcusr/RulebooktaxoReports/') 
-	 newDir2= 'RulebookReportRun_' + dirCreateDate
-	 
-	 ftp.mkdir(newDir2)
-	 
-	 ftp.sendcmd("SITE CHMOD 7777 #{newDir2}") 
-	 
-	 ftp.chdir(newDir2) 
-	 
-	 
-	  #puts resultFiles3.inspect
-			
-	  Dir.chdir ("outputFiles")
-	
-	  ftp.passive = true
-      ftp.debug_mode = true
-	  ftp.read_timeout = 10000
-
-      resultFiles3.each do |fileName2|
-	    #puts "Filename = #{fileName2}"
-	    #puts Dir.pwd
-	     #puts "In loop before binary put.."
-		 begin
-           Timeout.timeout(20) do
-             ftp.putbinaryfile("#{fileName2}")
-         end
-        rescue Timeout::Error
-          errors << "File download timed out for: #{fileName2}"
-          puts errors.last
-        end
-
-	     #ftp.putbinaryfile("#{fileName}") 
-         #puts "In loop after binary put..."
-	  end
-	
-	 Dir.chdir ("..")
-	
-     ftp.close 
-	end #ftp_results
-
 	def createExcludedRulebooksList(ruleTableName,ruleBookId,client2,outputrbMissing2,outputrbTaxoMissing2,outputrbTaxoEmpty2,outputExcludedRulebooks2)
 	
 	 
@@ -140,46 +107,35 @@ begin
 	 excludedRulebooksRead = ARGV[5] #filename of excluded rb table names
 	 
 
-	 #puts "tableCheck = #{tableCheck}"   # 1= use included table, 0 = use excluded table
-	 #puts "skipExcludedRulebooks = #{skipExcludedRulebooks}"   #0 = create excluded table
-	 #	 puts "skipExcludedCheck = #{skipExcludedCheck}"   #0 = create excluded table
-	#	 	 puts "skipIncluded = #{skipIncluded}"   #0 = create excluded table
-	  #puts "inputFilename = #{inputFilename}" # file to use for included or excluded tables
-	 #puts "excludedRulebooksRead = #{excludedRulebooksRead}" # file to use for included or excluded tables
 	 
-     #puts "test test..."
-	 #puts say_hello("Barb")
-	 
-	 # test email send_email
-	 
-	 #send_email "barbara.switzer@thomsonreuters.com", "test", "blah blah blah"
-    	 
+	
+     #send_email2 "barbara.switzer@thomsonreuters.com", "test", "blah blah blah", "test.txt"
+    
 	 #exit(0)
 	 
      currentDateTime = Time.now.strftime("%d%m%Y%H_%M_%S")
 	 puts "Start Date: #{currentDateTime}  ......"
 	 
-	 #validRulebookCount = 0
+	 zipFileName = "RulebookTaxoReport_#{currentDateTime}.zip"
+	  
+	 #backup output dir from previous run
 	 
-	#uat/test
-	#client = Mysql2::Client.new(:host => "10.198.229.12", :username => "developer", :password => "0rb1tal")
-  
+	 File.rename("outputFiles","outputFiles_#{currentDateTime}")
+	 
+	 #puts "creating new directory ..."
+	 
+	 Dir.mkdir("outputFiles")
+
     #prod slave
     client = Mysql2::Client.new(:host => "10.198.233.240", :username => "developer", :password => "0rb1tal", :flags => Mysql2::Client::MULTI_STATEMENTS)
    
     sqlQuery=""
-	
-    #results = client.query('select ref,tablename from rulebooks.rulebook_index order by tablename asc')
-	
+
 	if (skipExcludedCheck == '0') && (skipIncluded == '1') # use sql lookup without rulesbook IN clause
 	  sqlQuery = "select ref,tablename from rulebooks.rulebook_index order by tablename asc"
 	else  #build sql query with IN clause
 	 
-	  # if (skipIncluded == 0)  #using included rulebook list
-	   
-	     #puts" IN if (skipIncluded == 0)"
-	   
-		#excludedRulebooksRead = "dummy.txt"
+
 		
 		sqlQueryInClause = "("
 		
@@ -197,47 +153,13 @@ begin
 		
 	
 		sqlQuery = "select ref,tablename from rulebooks.rulebook_index where rulebooks.rulebook_index.ref IN #{sqlQueryInClause} order by ref asc"
-		#puts "SQl query #{sqlQuery} in IF stmt"
 	
-	   
-		#puts "IN skipExcludedRulebooks == 1 ELSE"
-	
-	    #results = client.query(sqlQuery)  #query only for rulebooks in included list,  input has to be a csv file of just rbid
-	 # end
 	  
 	end #end else skipExcludedCheck
-	 
-#exit(0)
 
-      #puts "SQl query #{sqlQuery}"
-	  
-	  #currentDateTime1 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, before rulebook_index lookup: #{currentDateTime1}  ......"
-		 
       results = client.query(sqlQuery)
  
-       #currentDateTime2 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, after rulebook_index lookup: #{currentDateTime2}  ......"
-		 
-	 #outputMissingTaxoFileName = "RulebookTaxoReport_#{currentDateTime}.csv"
-	
-	 #if (skipExcludedCheck == '0')
-	    #excludedRulebooksRead = "ExcludedRulebooks_0302201519_07_30.txt"
-	#	excludedRulebooksRead = inputFilename
-	
-    
-	 #end
-	 
 
-	 #outputMissingTaxo = File.open("#{outputMissingTaxoFileName}","w")
-	 
-	 #outputMissingTaxo << ("RuleBookName, RuleBookID, RecordId, ContentTypeCount, OrgCount, ThemeCount\r\n")
-	 
-	 
-	 #excludedRulebooks3 = %w(ACMdemo_taxonomy_link ACETraining ACESalesReports ACENEWSPROMO accounting1399557164767 Abu_Dhabi_Stock_Exchange banking1987 friendly1984 friendly1992 ComplianceLeas inland_revenue insurance1982 nasdaq_virtual_branded sex1986 Lofchies_Supervisory_Responsibilities pensionsact Supervisory_Responsiblities_Matrix HMSO Pension_Schemes)
-	 
-	 #skipExcludedRulebooks = 0
-	 
 	 resultFiles=[] 
 	 excludedRulebooks3=[] 
 	 
@@ -249,8 +171,6 @@ begin
 	    end #excludedRulesbookFile.each do |line|
 	  end #File.open("excludedRulebooksRead") do |excludedRulesbookFile|
 
-        #excludedRulebooks3.to_s.gsub('"', '')
-		#puts excludedRulebooks3.inspect
 	 end #end skipExcludedRulebooks
 	 
 	
@@ -276,13 +196,10 @@ begin
 	 end  #skipExcludedRulebooks == 0, open output files, write headers
 	 
 	 if skipExcludedRulebooks == '1'
-	   #puts "before chgdir outputFiles mainline..."
-	   #puts Dir.pwd
+	
 	   
 	   Dir.chdir ("outputFiles")
 	  
-	   #puts "after chgdir outputFiles mainline..."
-	   #puts Dir.pwd
 	 end 
 		  
 		  
@@ -293,71 +210,45 @@ begin
 	   ruleTableNameStrip.strip!
 	   
 	   rbid = row['ref']
-	    
-		#puts "Table name = #{ruleTableNameStrip}"
 	
 		if skipExcludedRulebooks == '0'  #if ==0 then will create the excluded list of rulebooks for later use
 	
         	createExcludedRulebooksList(ruleTableNameStrip,rbid,client,outputrbMissing,outputrbTaxoMissing ,outputrbTaxoEmpty,outputExcludedRulebooks)
 		end #end if skipExcludedRulebooks == 0
-		 
-	   #puts "Table check = #{tableCheck}"
 	
-	   #tableCheck= 0 #skip over actual taxo queries while we build list of rulebooks to skip
-		
-		#puts "SkipExcludedCheck = #{skipExcludedCheck}"
-		#puts "skipIncluded = #{skipIncluded}"
-		#puts "tableCheck = #{tableCheck}"
-		
 		rulebookExcluded = !excludedRulebooks3.index("#{ruleTableNameStrip}")
-		#puts "#{rulebookExcluded}"
 
-	#puts "#{ruleTableNameStrip}"
+	     fileRowCount = 0
 	
-	fileRowCount = 0
-		
-	   #if ((!excludedRulebooks3.index("#{ruleTableNameStrip}") && skipExcludedCheck == '0') || skipIncluded == '0') && tableCheck == '1'
 	    if !excludedRulebooks3.index("#{ruleTableNameStrip}") && tableCheck == '1' #&&  ruleTableNameStrip == 'US_CFR17'
 	  
-          #puts "In non exluded ---> 	  #{ruleTableNameStrip}"
-		  #outputMissingTaxoFileName = "./outputFiles/RulebookTaxoReport_#{rbid}_#{ruleTableNameStrip}_#{currentDateTime}.csv"
+         
 	      outputMissingTaxoFileName = "RulebookTaxoReport_#{rbid}_#{ruleTableNameStrip}_#{currentDateTime}.csv"
 		  
 	      outputMissingTaxo = File.open("#{outputMissingTaxoFileName}","w")
 	 
 	      outputMissingTaxo << ("RuleBookName, RuleBookID, RecordId, ElementId, ContentTypeCount, OrgCount, ThemeCount\r\n")
 	 
-	 #puts "Created output file ..."
-	 #exit(0)
-	     # Records with no taxo ids
-		 
+	
 		
 	     sqlQuery1="select record_id, element_id from rulebooks.#{ruleTableNameStrip} rb where "  + 
 	            " rb.record_id NOT in (select DISTINCT(rbLink.record_id) " +
 				" from taxonomy.#{ruleTableNameStrip}_taxonomy_link rbLink)" 
 				 
-		#currentDateTime3 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, before rulebook taxo #{ruleTableNameStrip} lookup: #{currentDateTime3}  ......"
-
+		
 		 results1 = client.query("#{sqlQuery1}")
 		   
 		   
-		 #currentDateTime4 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, after rulebook taxo #{ruleTableNameStrip} lookup: #{currentDateTime4}  ......"
-		
 		
         results1.each(:as => :hash) do |row1|
 	      record = row1['record_id']
 		  element = row1['element_id']
 		  
-	      #puts "#{ruleTableNameStrip}, #{record}, #{element}" 
-		  #exit(0)
-		  #taxoCount =0 
+	     
 		  contentCount =0 
 		  orgCount =0 
 		  themeCount =0 
-		  #sectorCount =0 
-		  #geographyCount =0 
+		
 		  
 		  outputMissingTaxo << "#{ruleTableNameStrip}, #{rbid}, #{record},#{element},#{contentCount},#{orgCount},#{themeCount} \r " 
 		  
@@ -371,13 +262,9 @@ begin
 				" from taxonomy.#{ruleTableNameStrip}_taxonomy_link rbLink)" +
 				" AND rb.end_date = '0000-00-00'"   #most recent version of the rule
 				
- #currentDateTime5 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, before rulebook taxo  get taxos #{ruleTableNameStrip} lookup: #{currentDateTime5}  ......"
-		
+
 		 results2 = client.query("#{sqlQuery2}")
 		 
-		  #currentDateTime6 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, after rulebook taxo get taxos #{ruleTableNameStrip} lookup: #{currentDateTime6}  ......"
 		
 		   
         results2.each(:as => :hash) do |row2|
@@ -392,18 +279,10 @@ begin
 				" taxo.id = rbLink.taxonomy_id AND " +
 				" taxo.tree_path like '/8884/%' " 
 				
-					 
-		  #currentDateTime7 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, before rulebook taxo get taxos content type #{ruleTableNameStrip} lookup: #{currentDateTime7}  ......"
 		
-				 #puts "content type sql #{sqlQuery3}"
 		      results3 = client.query("#{sqlQuery3}")
 			  
-			 
-		  #currentDateTime8 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, after rulebook taxo get taxos content type #{ruleTableNameStrip} lookup: #{currentDateTime8}  ......"
-		
-			  
+	
 		   # Count Orgs
 		   
 		       sqlQuery4="select rbLink.record_id " +
@@ -411,19 +290,10 @@ begin
 				" where rbLink.record_id = #{record2} AND " +
 				" taxo.id = rbLink.taxonomy_id AND " +
 				" taxo.tree_path like '/6989/%' "
-				
-				#puts "prg sql #{sqlQuery4}"
-				
-					 
-		  #currentDateTime9 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, before rulebook taxo get taxos orgs #{ruleTableNameStrip} lookup: #{currentDateTime9}  ......"
-		
+	
 		      results4 = client.query("#{sqlQuery4}")
 			  
-				 
-		  #currentDateTime10 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, after rulebook taxo get taxos orgs #{ruleTableNameStrip} lookup: #{currentDateTime10}  ......"
-		
+
 			   
 		   # Count Themes
 		   
@@ -433,27 +303,13 @@ begin
 				" taxo.id = rbLink.taxonomy_id AND " +
 				" taxo.tree_path like '/6378/%' " 
 				
-				#" OR taxo.tree_path like '/5443/%') "   #5443 is Subject, is Subject the same as themes???
-				
-				#puts "theme sql #{sqlQuery5}"
-				  
-				  #currentDateTime11 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, before rulebook taxo get taxos themes #{ruleTableNameStrip} lookup: #{currentDateTime11}  ......"
-		
+			
 		      results5 = client.query("#{sqlQuery5}")
 			  
-			  #currentDateTime12 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	     #puts "Start Date, after rulebook taxo get taxos themes #{ruleTableNameStrip} lookup: #{currentDateTime12}  ......"
-		
-			   
-			   
-		   # If any of the 3 counts = 0 then goes into the file 
-		   
+			
 		 
 		    if (results3.count == 0) || (results4.count == 0) || (results5.count == 0)
 			
-			  #puts "In zero count..."
-		
 			  outputMissingTaxo  << "#{ruleTableNameStrip}, #{rbid}, #{record2}, #{element2}, #{results3.count},#{results4.count},#{results5.count} \r " 
 			  fileRowCount = fileRowCount+1
 			  
@@ -465,22 +321,17 @@ begin
 		 
 		 if fileRowCount == 0
 		   puts("File empty .. #{outputMissingTaxoFileName}")
-		   #File.delete("#{outputMissingTaxoFileName}")
+
 		 else
-		   #puts("File NOT empty .. #{outputMissingTaxoFileName}")
+		   
 		   resultFiles << outputMissingTaxoFileName
 		   # put file in an array so we can ftp later
 		 end
 		 
 	   end # end if !excludedRulebooks2.index(ruleTableNameStrip) && tableCheck == 1
 	 
-	   #puts "I AM HERE after "
-	   
-	   #validRulebookCount = validRulebookCount+1
      end #end results.each(:as => :hash) do |row|
 	 
-	#exit(0)
-	 #outputMissingTaxo.close
 	
 	 
 	 if skipExcludedRulebooks == '0'
@@ -491,26 +342,21 @@ begin
 	 else
 	    Dir.chdir ("..")
 	  
-	   #puts "after chgdir outputFiles mainline2 end..."
-	    #puts Dir.pwd
+	 
 	 end
 	 
-	 
-	 #ftp all files from array of files that had data for this run
-	 #puts "Before FTP routine....."
-	 
+	
 	 dirDateTime2 = Time.now.strftime("%d%m%Y%H_%M_%S")
-	 
-	 ftp_results(resultFiles,dirDateTime2)
-	 
-	 #puts "After FTP routine....."
+	
+	 create_zipFile("outputFiles/",zipFileName)
 	 
 	 endDateTime = Time.now.strftime("%d%m%Y%H_%M_%S")
 	 
-	 #puts "validRulebookCount #{validRulebookCount} "
 	 puts "End Date: #{endDateTime}  ......"
 	
-	 send_email "barbara.switzer@thomsonreuters.com", "Rulebook Taxo Run Succeeded #{endDateTime}", "Rulebook Taxo Run Succeeded...#{endDateTime} \r\n\n  Files located at:  \r Hostname: c985rsb.int.westgroup.com, \r Directory: /home/tcusr/RulebooktaxoReports/RulebookReportRun_#{dirDateTime2} "
+	 send_email2 "barbara.switzer@thomsonreuters.com", "Rulebook Taxo Run Succeeded #{endDateTime}",  "Rulebook Taxo Run Succeeded #{endDateTime} \r\n\r\n  See attached file.. \r\n\r\n  Start Date/Time: #{currentDateTime}  \r\n End Date\Time: #{endDateTime} \r\n\r\n  If you have any questions, please contact me.  -- Barb Switzer 585-627-2398", zipFileName
+   
+   
    
 rescue Mysql2::Error => e
     puts e.errno
@@ -532,7 +378,7 @@ rescue Mysql2::Error => e
 	 
 	puts "End Error Date: #{endErrorDateTime}  ......"
 	
-	send_email "barbara.switzer@thomsonreuters.com", "Rulebook Taxo Run Failed  #{endErrorDateTime}", "Rulebook Taxo Run Failed...#{endErrorDateTime}"
+	send_email2 "barbara.switzer@thomsonreuters.com", "Rulebook Taxo Run Failed  #{endErrorDateTime}", "Rulebook Taxo Run Failed...#{endErrorDateTime}", "test.txt"
     
 	  
 ensure
