@@ -89,7 +89,15 @@ begin
 		end #includedRulesbookFile.each_line do |line|
 	end #File.open("#{inputFilename}") do |includedRulesbookFile|
 		
-		
+		 
+	 Dir.chdir ("ThemeOnly_outputFiles")
+	 
+	 outputThemeCountTaxoFileName = "RulebookTaxoReport_COUNT_ThemeOnly_#{currentDateTime}.csv"
+		  
+	 outputThemeCountTaxo = File.open("#{outputThemeCountTaxoFileName}","w")
+	 
+	 outputThemeCountTaxo << ("ThemeName, ThemeID, ThemeCount\r\n")
+	 
 	sqlQueryInClause = "#{sqlQueryInClause} )"
 	sqlQueryInClause.slice! ", )"
 	sqlQueryInClause = "#{sqlQueryInClause} )"
@@ -100,9 +108,7 @@ begin
     results = client.query(sqlQuery)
  
 	 resultFiles=[] 
-	 
-	 Dir.chdir ("ThemeOnly_outputFiles")
-		  
+	  
 	 results.each(:as => :hash) do |row|
 	
 	   ruleTableName = row['tablename']
@@ -122,16 +128,7 @@ begin
 	      outputThemeTaxo = File.open("#{outputThemeTaxoFileName}","w")
 	 
 	      outputThemeTaxo << ("RuleBookName, RuleBookID, RecordId, ElementId, ThemeName, ThemeID\r\n")
-	 
-	      outputThemeCountTaxoFileName = "RulebookTaxoReport_COUNT_ThemeOnly_#{currentDateTime}.csv"
-		  
-	      outputThemeCountTaxo = File.open("#{outputThemeCountTaxoFileName}","w")
-	 
-	      outputThemeCountTaxo << ("ThemeName, ThemeID, ThemeCount\r\n")
-	 
-	
-	
-		
+			
 	     sqlQuery1="select record_id, element_id from rulebooks.#{ruleTableNameStrip} rb where "  + 
 	            " rb.record_id NOT in (select DISTINCT(rbLink.record_id) " +
 				" from taxonomy.#{ruleTableNameStrip}_taxonomy_link rbLink) order by record_id asc" 
@@ -246,12 +243,6 @@ begin
 		 
 		 outputThemeTaxo.close
 		 
-		 puts "Before output of hash ..."
-		 
-		 themes.each {|key,value| outputThemeCountTaxo << "#{key},#{value} \r"}
-		 
-		 outputThemeCountTaxo.close
-		  
 		 if fileRowCount > 0   #Found data for this rulebook that needs to be recorded
 	        resultFiles << outputThemeTaxoFileName
 		  
@@ -261,7 +252,11 @@ begin
 	 
      end #end results.each(:as => :hash) do |row|
 	 
-	
+	puts "Before output of hash ..."
+		 
+    themes.each {|key,value| outputThemeCountTaxo << "#{key},#{value} \r"}
+		 
+    outputThemeCountTaxo.close
 	
 	 Dir.chdir ("..")
 	  
