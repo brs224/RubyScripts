@@ -6,6 +6,15 @@ C:/RailsInstaller/Ruby2.1.0/bin/ruby.exe RulebookTaxoReport77.rb 1 1 0 0 RBID_LI
 
 C:/RailsInstaller/Ruby2.1.0/bin/ruby.exe RulebookTaxoReport101.rb 1 1 0 0 RBID_LIST_LEGAL.csv ExcludedLegalRulebooks.txt
 
+C:/RailsInstaller/Ruby2.1.0/bin/ruby.exe XMlParseTest.rb normtest.xml
+
+C:/RailsInstaller/Ruby2.1.0/bin/ruby.exe ParseNORMTrackerSeries.rb LegacyRelationshipGUIDS_PROD_03022015-3-norm.xml
+
+C:/RailsInstaller/Ruby2.1.0/bin/ruby.exe ParseDOCTrackerSeries.rb LegacyRelationshipGUIDS_PROD_03022015-3-norm.xml parseResults_normtest_2.csv
+
+test
+cygdrive/c/Users/u6025245/git/RubyScripts/RulebookTaxoReport
+
 
 Themes/Subject:
 IE5996FF0458211E3A899B08B7B2FF604
